@@ -65,9 +65,13 @@ PRODUCT_PROPERTY_OVERRIDES += \
 PRODUCT_COPY_FILES += \
     $(COMMON_PATH)/radioreset/restart_rild.sh:vendor/bin/restart_rild.sh
 
+# param.sh writes /vendor/param.lfs over the PARAM partition on first boot.
+# Devices whose PARAM must never be written set SMDK4412_NO_PARAM_SCRIPT.
+ifneq ($(SMDK4412_NO_PARAM_SCRIPT),true)
 PRODUCT_COPY_FILES += \
     $(COMMON_PATH)/configs/param.sh:vendor/bin/param.sh \
     $(COMMON_PATH)/configs/param.rc:vendor/etc/init/param.rc
+endif
 
 # VNDK
 PRODUCT_COPY_FILES += \
