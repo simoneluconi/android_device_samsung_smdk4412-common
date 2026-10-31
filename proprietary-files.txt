@@ -6,6 +6,11 @@
 -vendor/lib/libMali.so
 -vendor/lib/egl/libGLESv1_CM_mali.so
 -vendor/lib/egl/libGLESv2_mali.so
+# libMali.so (built for Jelly Bean MR2) dlopen()s its GLES modules from
+# /system/lib/egl; without these copies every eglCreateContext() fails with
+# EGL_BAD_CONFIG and SurfaceFlinger aborts.
+vendor/lib/egl/libGLESv1_CM_mali.so:system/lib/egl/libGLESv1_CM_mali.so
+vendor/lib/egl/libGLESv2_mali.so:system/lib/egl/libGLESv2_mali.so
 
 # MobiCore (TrustZone) client libraries
 -vendor/lib/libMcClient.so
