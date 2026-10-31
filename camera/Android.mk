@@ -58,6 +58,12 @@ ifeq ($(TARGET_SOC),exynos4x12)
 	LOCAL_CFLAGS += -DEXYNOS_ION
 endif
 
+# gd1: there is no M9MO preset yet. Report no cameras, so that cameraserver
+# never drives the ISP with another sensor's settings.
+ifeq ($(TARGET_DEVICE),gd1)
+	LOCAL_CFLAGS += -DEXYNOS_CAMERA_DISABLED
+endif
+
 LOCAL_MODULE := camera.$(TARGET_BOOTLOADER_BOARD_NAME)
 LOCAL_MODULE_RELATIVE_PATH := hw
 LOCAL_MODULE_TAGS := optional

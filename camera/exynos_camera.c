@@ -4153,6 +4153,11 @@ int exynos_camera_close(hw_device_t *device)
 int exynos_camera_open(const struct hw_module_t* module, const char *camera_id,
 	struct hw_device_t** device)
 {
+#ifdef EXYNOS_CAMERA_DISABLED
+	ALOGE("%s: no camera preset for this device yet", __func__);
+	return -ENODEV;
+#endif
+
 	struct camera_device *camera_device = NULL;
 	struct exynos_camera *exynos_camera = NULL;
 	int id;
@@ -4212,6 +4217,11 @@ error_preset:
 int exynos_camera_get_number_of_cameras(void)
 {
 	ALOGD("%s()", __func__);
+
+#ifdef EXYNOS_CAMERA_DISABLED
+	ALOGW("%s: no camera preset for this device yet", __func__);
+	return 0;
+#endif
 
 	if (exynos_camera_config == NULL || exynos_camera_config->presets == NULL) {
 		ALOGE("%s: Unable to find proper camera config", __func__);
