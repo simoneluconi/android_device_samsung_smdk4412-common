@@ -3,6 +3,8 @@
 #include "secril-shim.h"
 #include "secril-sap.h"
 
+#include <ctype.h>
+
 #define ATOI_NULL_HANDLED(x) (x ? atoi(x) : 0)
 
 /* A copy of the original RIL function table. */
@@ -405,6 +407,66 @@ static RIL_RadioState onStateRequestShim() {
     return newRadioState;
 }
 
+/*
+ * The Samsung RIL answers RIL_REQUEST_GET_SMSC_ADDRESS with the address as a
+ * hex SMS PDU field (length byte, type of address, swapped BCD digits, e.g.
+ * "0791932350585800"). Android takes the answer for a dialling number
+ * ("+393205858500") and encodes it again into every SEND_SMS, so the network
+ * got the SMSC "0791932350585800" and rejected each SMS with RP cause 95
+ * (seen on the GC100, 2026-11-05). Hand Android the number instead.
+ */
+static char smscNumber[2 * 12 + 2];
+
+static int hexNibble(char c)
+{
+	if (c >= '0' && c <= '9')
+		return c - '0';
+	c = tolower((unsigned char)c);
+	if (c >= 'a' && c <= 'f')
+		return c - 'a' + 10;
+	return -1;
+}
+
+/* Returns the number, or NULL if smsc is not a hex PDU address */
+static const char *smscPduToNumber(const char *smsc)
+{
+	size_t i, len, octets;
+	int toa, hi, lo;
+	char *p = smscNumber;
+
+	if (smsc == NULL)
+		return NULL;
+	len = strlen(smsc);
+	for (i = 0; i < len; i++) {
+		if (hexNibble(smsc[i]) < 0)
+			return NULL;
+	}
+	if (len < 4 || len % 2 != 0)
+		return NULL;
+	octets = hexNibble(smsc[0]) * 16 + hexNibble(smsc[1]);
+	/* The type of address plus at most 11 octets of digits */
+	if (octets < 2 || octets > 12 || len != 2 + 2 * octets)
+		return NULL;
+	toa = hexNibble(smsc[2]) * 16 + hexNibble(smsc[3]);
+	if ((toa & 0x70) == 0x10)
+		*p++ = '+';
+	/* The digits: low nibble first, 0xF pads an odd count */
+	for (i = 4; i < len; i += 2) {
+		hi = hexNibble(smsc[i]);
+		lo = hexNibble(smsc[i + 1]);
+		if (lo > 9)
+			return NULL;
+		*p++ = '0' + lo;
+		if (hi == 0xf)
+			break;
+		if (hi > 9)
+			return NULL;
+		*p++ = '0' + hi;
+	}
+	*p = '\0';
+	return smscNumber;
+}
+
 static void onRequestShim(int request, void *data, size_t datalen, RIL_Token t)
 {
 	RLOGD("%s:\t\t\t\t\t>>> REQUEST\t\t\t: %s: data:%p datalen:%d token:%p\n", __FUNCTION__, requestToString(request), data, datalen, t);
@@ -743,6 +805,18 @@ static void onRequestCompleteShim(RIL_Token t, RIL_Errno e, void *response, size
 		case RIL_REQUEST_GET_ACTIVITY_INFO:
 			onCompleteGetActivityInfo(t);
 			return;
+		case RIL_REQUEST_GET_SMSC_ADDRESS:
+			/* A hex PDU address, see smscPduToNumber() */
+			if (e == RIL_E_SUCCESS && response != NULL) {
+				const char *number = smscPduToNumber((const char *)response);
+
+				if (number != NULL) {
+					RLOGD("%s: SMSC %s -> %s\n", __FUNCTION__, (const char *)response, number);
+					rilEnv->OnRequestComplete(t, e, (void *)number, strlen(number) + 1);
+					return;
+				}
+			}
+			break;
 	}
 
 null_token_exit:
