@@ -206,8 +206,12 @@ PRODUCT_PACKAGES += \
     android.hardware.health@2.0-service
 
 # Charger
+# Devices that crash after resuming in off-mode charging set
+# SMDK4412_CHARGER_NO_SUSPEND.
+ifneq ($(SMDK4412_CHARGER_NO_SUSPEND),true)
 PRODUCT_PRODUCT_PROPERTIES += \
     ro.charger.enable_suspend=true
+endif
 
 # DRM
 PRODUCT_PACKAGES += \
