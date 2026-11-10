@@ -177,10 +177,14 @@ PRODUCT_COPY_FILES += \
 PRODUCT_PACKAGES += \
     android.hardware.sensors@1.0-impl
 
-# Legacy GPS
+# Legacy GPS. A device without a working GPS HAL yet sets SMDK4412_NO_GNSS:
+# a GNSS service that keeps exiting is an "updatable" process crash loop,
+# and RescueParty then reboots to recovery and asks for a factory reset.
+ifneq ($(SMDK4412_NO_GNSS),true)
 PRODUCT_PACKAGES += \
     android.hardware.gnss@1.0-impl \
     android.hardware.gnss@1.0-service.exynos4
+endif
 
 # Vibrator
 PRODUCT_PACKAGES += \
