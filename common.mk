@@ -413,11 +413,16 @@ PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
 PRODUCT_PROPERTY_OVERRIDES += \
     ro.lineage.build.vendor_security_patch=2015-11-05
 
+# Low RAM: the Go defaults and the dalvik heap of a 1G phone. A device with
+# more RAM (the 2 GB Galaxy Camera 2) sets SMDK4412_NOT_LOW_RAM and brings
+# its own heap.
+ifneq ($(SMDK4412_NOT_LOW_RAM),true)
 # Inherit go defaults configs
 $(call inherit-product, build/make/target/product/go_defaults.mk)
 
 # Apply Dalvik config for 1G phone
 $(call inherit-product, frameworks/native/build/phone-xhdpi-1024-dalvik-heap.mk)
+endif
 
 # Include debugging props
 $(call inherit-product, device/samsung/smdk4412-common/system_prop_debug.mk)
