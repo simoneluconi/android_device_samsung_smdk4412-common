@@ -424,5 +424,9 @@ $(call inherit-product, build/make/target/product/go_defaults.mk)
 $(call inherit-product, frameworks/native/build/phone-xhdpi-1024-dalvik-heap.mk)
 endif
 
-# Include debugging props
+# Include debugging props (root adb without authorisation, adb on by
+# default). A device whose builds go to other people sets
+# SMDK4412_NO_DEBUG_PROPS := true before inheriting this file.
+ifneq ($(SMDK4412_NO_DEBUG_PROPS),true)
 $(call inherit-product, device/samsung/smdk4412-common/system_prop_debug.mk)
+endif
